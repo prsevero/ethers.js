@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { ethers } from 'ethers'
 
 import Header from '@/components/ui/header'
+import Wallet from '@/components/ui/wallet'
 import { connect, getBalance, getWallet } from './api/actions'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -19,7 +20,7 @@ declare var process : {
 
 export default function Home() {
   const [provider, setProvider] = useState<ethers.JsonRpcProvider>(null)
-  const [blockNumber, setBlockNumber] = useState<Number | null>(null)
+  const [blockNumber, setBlockNumber] = useState<number | null>(null)
   const [customWallet, setCustomWallet] = useState<ethers.HDNodeWallet>(null)
   const [walletFirst, setWalletFirst] = useState<ethers.HDNodeWallet>(null)
   const [walletSecond, setWalletSecond] = useState<ethers.HDNodeWallet>(null)
@@ -34,6 +35,7 @@ export default function Home() {
       if (mnemonic1) {
         const wallet1: ethers.HDNodeWallet = await getWallet(mnemonic1, provider)
         setWalletFirst(wallet1)
+        setWalletSecond(wallet1)
       }
 
       const mnemonic2 = process.env.MNEMONIC_2 || process.env.NEXT_PUBLIC_MNEMONIC_2
@@ -63,7 +65,7 @@ export default function Home() {
   }, [walletSecond])
 
   async function handleInit() {
-    const [provider, number]: [ethers.JsonRpcProvider, Number] = await connect()
+    const [provider, number]: [ethers.JsonRpcProvider, number] = await connect()
     setProvider(provider)
     setBlockNumber(number)
   }
@@ -83,7 +85,11 @@ export default function Home() {
             Connect to blockchain
           </button>
         </div> :
-        <main className="flex justify-center mt-16 p-5">
+        <main className="mt-16 p-4">
+          <div className="flex flex-wrap gap-4">
+            {walletFirst && <Wallet balance={walletFirstBalance} name="Main wallet" wallet={walletFirst} />}
+            {walletSecond && <Wallet balance={walletSecondBalance} name="Secondary wallet" wallet={walletSecond} />}
+          </div>
           {!customWallet &&
             <button
               className="bg-sky-900 font-semibold px-6 py-3 rounded-lg text-white"
@@ -91,12 +97,6 @@ export default function Home() {
             >
               Create wallet
             </button>}
-          {walletFirst &&
-            <div>
-              <h2>First Wallet</h2>
-              <p>Address: {walletFirst.address}</p>
-              <p>Balance: {walletFirstBalance || 0} ETH</p>
-            </div>}
         </main>
       }
     </>

@@ -5,9 +5,9 @@ export async function createProvider(): Promise<ethers.JsonRpcProvider> {
     process.env.NEXT_PUBLIC_NODE_URL)
 }
 
-export async function connect(): Promise<[ethers.JsonRpcProvider, Number]> {
+export async function connect(): Promise<[ethers.JsonRpcProvider, number]> {
   const provider: ethers.JsonRpcProvider = await createProvider()
-  const number: Number = await provider.getBlockNumber()
+  const number: number = await provider.getBlockNumber()
   return [provider, number]
 }
 
