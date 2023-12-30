@@ -74,27 +74,31 @@ export default function Home() {
   return (
     <>
       <Header />
-      <main className="flex justify-center mt-16 p-5">
-        <button
-          className={`${blockNumber ? 'bg-green-600 pointer-events-none' : 'bg-sky-900'} font-semibold px-6 py-3 rounded-lg text-white`}
-          onClick={handleInit}
-        >
-          {blockNumber ? 'Connected' : 'Connect'} to blockchain
-        </button>
-        {blockNumber && !customWallet &&
+      {!blockNumber ?
+        <div className="items-center flex h-[calc(100vh-theme('spacing.16'))] justify-center mt-16">
           <button
             className="bg-sky-900 font-semibold px-6 py-3 rounded-lg text-white"
-            onClick={handleCustomWallet}
+            onClick={handleInit}
           >
-            Create wallet
-          </button>}
-        {walletFirst &&
-          <div>
-            <h2>First Wallet</h2>
-            <p>Address: {walletFirst.address}</p>
-            <p>Balance: {walletFirstBalance || 0} ETH</p>
-          </div>}
-      </main>
+            Connect to blockchain
+          </button>
+        </div> :
+        <main className="flex justify-center mt-16 p-5">
+          {!customWallet &&
+            <button
+              className="bg-sky-900 font-semibold px-6 py-3 rounded-lg text-white"
+              onClick={handleCustomWallet}
+            >
+              Create wallet
+            </button>}
+          {walletFirst &&
+            <div>
+              <h2>First Wallet</h2>
+              <p>Address: {walletFirst.address}</p>
+              <p>Balance: {walletFirstBalance || 0} ETH</p>
+            </div>}
+        </main>
+      }
     </>
   )
 }
