@@ -21,11 +21,12 @@ declare var process : {
 export default function Home() {
   const [provider, setProvider] = useState<ethers.JsonRpcProvider>(null)
   const [blockNumber, setBlockNumber] = useState<number | null>(null)
-  const [customWallet, setCustomWallet] = useState<ethers.HDNodeWallet>(null)
+  const [walletCustom, setWalletCustom] = useState<ethers.HDNodeWallet>(null)
   const [walletFirst, setWalletFirst] = useState<ethers.HDNodeWallet>(null)
   const [walletSecond, setWalletSecond] = useState<ethers.HDNodeWallet>(null)
-  const [walletFirstBalance, setWalletFirstBalance] = useState<string | null>(null)
-  const [walletSecondBalance, setWalletSecondBalance] = useState<string | null>(null)
+  const [walletCustomBalance, setWalletCustomBalance] = useState<string>('0')
+  const [walletFirstBalance, setWalletFirstBalance] = useState<string>('0')
+  const [walletSecondBalance, setWalletSecondBalance] = useState<string>('0')
 
   useEffect(() => {
     if (!provider) return
@@ -70,7 +71,7 @@ export default function Home() {
     setBlockNumber(number)
   }
 
-  async function handleCustomWallet() {
+  async function handleWalletCustom() {
   }
 
   return (
@@ -87,15 +88,20 @@ export default function Home() {
         </div> :
         <main className="mt-16 p-4">
           <div className="flex flex-wrap gap-4">
-            {walletFirst && <Wallet balance={walletFirstBalance} name="Main wallet" wallet={walletFirst} />}
-            {walletSecond && <Wallet balance={walletSecondBalance} name="Secondary wallet" wallet={walletSecond} />}
+            {walletFirst &&
+              <Wallet balance={walletFirstBalance} name="Main wallet" wallet={walletFirst} />}
+            {walletSecond &&
+              <Wallet balance={walletSecondBalance} name="Secondary wallet" wallet={walletSecond} />}
+            {walletCustom &&
+              <Wallet balance={walletCustomBalance} name="Secondary wallet" wallet={walletCustom} />}
           </div>
-          {!customWallet &&
+
+          {!walletCustom &&
             <button
-              className="bg-sky-900 font-semibold px-6 py-3 rounded-lg text-white"
-              onClick={handleCustomWallet}
+              className="bg-sky-900 block font-semibold mt-20 mx-auto px-6 py-3 rounded-lg text-white"
+              onClick={handleWalletCustom}
             >
-              Create wallet
+              Create custom wallet
             </button>}
         </main>
       }
