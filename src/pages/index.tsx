@@ -1,108 +1,163 @@
-import { Inter } from 'next/font/google'
-import { useEffect, useState } from 'react'
+import Head from 'next/head'
+import { useEffect, useRef, useState } from 'react'
 import { ethers } from 'ethers'
+import { toast } from 'react-toastify'
 
-import Header from '@/components/ui/header'
-import Wallet from '@/components/ui/wallet'
-import { connect, getBalance, getWallet } from './api/actions'
+import type { TypeWallet } from '@/_app/definitions'
+import Button from '@/components/button'
+import ClipboardCopy from '@/components/clipboard-copy'
+import StartScreen from '@/components/start-screen'
+import Transfer from '@/components/transfer'
+import Wallet from '@/components/wallet'
+import { connect, createWallet, getBalance, getDefaultWallets } from '@/_app/api'
 
-const inter = Inter({ subsets: ['latin'] })
-
-declare var process : {
-  env: {
-    MNEMONIC_1: string,
-    NEXT_PUBLIC_MNEMONIC_1: string,
-    MNEMONIC_2: string,
-    NEXT_PUBLIC_MNEMONIC_2: string,
-  }
-}
+// declare var process : {
+//   env: {
+//     MNEMONIC: string,
+//     NEXT_PUBLIC_MNEMONIC: string,
+//   }
+// }
 
 
 export default function Home() {
-  const [provider, setProvider] = useState<ethers.JsonRpcProvider>(null)
-  const [blockNumber, setBlockNumber] = useState<number | null>(null)
-  const [walletCustom, setWalletCustom] = useState<ethers.HDNodeWallet>(null)
-  const [walletFirst, setWalletFirst] = useState<ethers.HDNodeWallet>(null)
-  const [walletSecond, setWalletSecond] = useState<ethers.HDNodeWallet>(null)
-  const [walletCustomBalance, setWalletCustomBalance] = useState<string>('0')
-  const [walletFirstBalance, setWalletFirstBalance] = useState<string>('0')
-  const [walletSecondBalance, setWalletSecondBalance] = useState<string>('0')
+  const [loading, setLoading] = useState<boolean>(false)
+  const [provider, setProvider] = useState<ethers.JsonRpcProvider>()
+  // Wallets
+  const [walletMain, setWalletMain] = useState<TypeWallet>()
+  const [walletSecondary, setWalletSecondary] = useState<TypeWallet>()
+  const [walletUser, setWalletUser] = useState<TypeWallet>()
 
+  // Wallets related
   useEffect(() => {
     if (!provider) return
 
     (async () => {
-      const mnemonic1 = process.env.MNEMONIC_1 || process.env.NEXT_PUBLIC_MNEMONIC_1
-      if (mnemonic1) {
-        const wallet1: ethers.HDNodeWallet = await getWallet(mnemonic1, provider)
-        setWalletFirst(wallet1)
-        setWalletSecond(wallet1)
-      }
-
-      const mnemonic2 = process.env.MNEMONIC_2 || process.env.NEXT_PUBLIC_MNEMONIC_2
-      if (mnemonic2) {
-        const wallet2: ethers.HDNodeWallet = await getWallet(mnemonic2, provider)
-        setWalletSecond(wallet2)
-      }
+      const [wallet1, wallet2] = await getDefaultWallets(provider)
+      if (!wallet1) return
+      setWalletMain({name: 'Main wallet', wallet: wallet1})
+      setWalletSecondary({name: 'Secondary wallet', wallet: wallet2})
     })()
   }, [provider])
 
   useEffect(() => {
-    if (!provider || !walletFirst) return;
-
-    (async () => {
-      const balance: string = await getBalance(provider, walletFirst.address)
-      setWalletFirstBalance(balance)
-    })()
-  }, [walletFirst])
+    if (!walletMain || walletMain.balance !== undefined) return
+    getMainWalletBalance()
+  }, [walletMain])
 
   useEffect(() => {
-    if (!provider || !walletSecond) return;
+    if (!walletSecondary || walletSecondary.balance !== undefined) return
+    getSecondaryWalletBalance()
+  }, [walletSecondary])
 
-    (async () => {
-      const balance: string = await getBalance(provider, walletSecond.address)
-      setWalletSecondBalance(balance)
-    })()
-  }, [walletSecond])
-
-  async function handleInit() {
-    const [provider, number]: [ethers.JsonRpcProvider, number] = await connect()
-    setProvider(provider)
-    setBlockNumber(number)
+  async function getMainWalletBalance() {
+    if (!provider || !walletMain) return;
+    const balance = await getBalance(provider, walletMain.wallet.address)
+    setWalletMain({...walletMain, balance: balance})
   }
 
-  async function handleWalletCustom() {
+  async function getSecondaryWalletBalance() {
+    if (!provider || !walletSecondary) return;
+    const balance = await getBalance(provider, walletSecondary.wallet.address)
+    setWalletSecondary({...walletSecondary, balance: balance})
+  }
+
+  async function getUserWalletBalance() {
+    if (!provider || !walletUser) return;
+    const balance = await getBalance(provider, walletUser.wallet.address)
+    setWalletUser({...walletUser, balance: balance})
+  }
+
+  async function handleWalletUser() {
+    setLoading(true)
+    try {
+      const wallet: ethers.HDNodeWallet = await createWallet()
+      setWalletUser({balance: BigInt(0), name: 'User wallet', wallet: wallet})
+
+      toast.success(({ closeToast }) => (
+        <>
+          <div className="items-center flex gap-5 mb-3">
+            <p className="font-bold">Your wallet info, store it safe:</p>
+            <ClipboardCopy
+              text={
+                `Mnemonic: ${wallet.mnemonic?.phrase}\n` +
+                `Private key: ${wallet.signingKey.privateKey}\n` +
+                `Public key: ${wallet.publicKey}`
+              }
+            />
+          </div>
+          <p className="text-sm mb-1"><b>Mnemonic:</b> {wallet.mnemonic?.phrase}</p>
+          <p className="text-sm mb-1"><b>Private Key:</b> {wallet.signingKey.privateKey}</p>
+          <p className="text-sm"><b>Public Key:</b> {wallet.publicKey}</p>
+        </>
+      ), {autoClose: false})
+    } catch (error) {
+      console.error(error)
+      toast.error('Could not create a new wallet.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const updateBalances = () => {
+    getMainWalletBalance()
+    getSecondaryWalletBalance()
+    getUserWalletBalance()
+  }
+
+  async function handleInit() {
+    setLoading(true)
+
+    try {
+      const [provider] = await connect()
+      setProvider(provider)
+    } catch(e) {
+      console.error(e)
+      toast.error('Could not connect.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <>
-      <Header />
-      {!blockNumber ?
-        <div className="items-center flex h-[calc(100vh-theme('spacing.16'))] justify-center mt-16">
-          <button
-            className="bg-sky-900 font-semibold px-6 py-3 rounded-lg text-white"
-            onClick={handleInit}
-          >
-            Connect to blockchain
-          </button>
-        </div> :
+      <Head>
+        <title>ethers.js by @prsevero</title>
+      </Head>
+
+      {!provider ?
+        <StartScreen handleInit={handleInit} loading={loading} /> :
         <main className="mt-16 p-4">
-          <div className="flex flex-wrap gap-4">
-            {walletFirst &&
-              <Wallet balance={walletFirstBalance} name="Main wallet" wallet={walletFirst} />}
-            {walletSecond &&
-              <Wallet balance={walletSecondBalance} name="Secondary wallet" wallet={walletSecond} />}
-            {walletCustom &&
-              <Wallet balance={walletCustomBalance} name="Secondary wallet" wallet={walletCustom} />}
+          <div className="flex flex-wrap gap-4 md:flex-nowrap">
+            {walletMain &&
+              <div className="basis-full md:basis-1/3">
+                <Wallet wallet={walletMain} />
+              </div>}
+            {walletSecondary && 
+              <div className="basis-full md:basis-1/3">
+                <Wallet wallet={walletSecondary} />
+              </div>}
+            {walletUser &&
+              <div className="basis-full md:basis-1/3">
+                <Wallet wallet={walletUser} />
+              </div>}
           </div>
 
-          {!walletCustom &&
-            <button
-              className="bg-sky-900 block font-semibold mt-20 mx-auto px-6 py-3 rounded-lg text-white"
-              onClick={handleWalletCustom}
-            >
+          {!walletUser &&
+            <Button className="mt-3 mx-auto" loading={loading} onClick={handleWalletUser} size="sm">
               Create custom wallet
-            </button>}
+            </Button>}
+
+          {walletMain && walletSecondary &&
+            <div className="mt-8">
+              <Transfer
+                onTransaction={updateBalances}
+                wallets={
+                  walletUser ?
+                    [walletMain, walletSecondary, walletUser] :
+                    [walletMain, walletSecondary]
+                }
+              />
+            </div>}
         </main>
       }
     </>

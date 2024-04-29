@@ -1,7 +1,7 @@
 export default function Header() {
   return (
     <header className={`
-      bg-sky-600
+      bg-sky-700
       content-start
       fixed
       flex
