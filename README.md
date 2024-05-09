@@ -4,7 +4,7 @@
 
 ## Demo
 
-You can access the project [here](https://ethersjs.netlify.app/).
+Link coming soon.
 
 ## Overview
 
