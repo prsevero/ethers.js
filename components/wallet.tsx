@@ -1,6 +1,6 @@
 import { ethers } from 'ethers'
 
-import type { TypeTransactionsHistory, TypeWallet } from '@/_app/definitions'
+import type { TypeWallet } from '@/_app/definitions'
 import Link from '@/components/link'
 import ClipboardCopy from '@/components/clipboard-copy'
 

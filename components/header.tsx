@@ -6,7 +6,7 @@ export default function Header() {
       fixed
       flex
       font-bold
-      h-16
+      h-14
       items-center
       justify-center
       left-0

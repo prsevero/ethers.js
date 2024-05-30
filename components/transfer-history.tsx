@@ -1,12 +1,13 @@
 import { Fragment } from 'react'
 import { ethers } from 'ethers'
 
-import type { TypeTransactionsHistory } from '@/_app/definitions'
+import type { TypeTransaction } from '@/_app/definitions'
+import Loading from '@/components/loading'
 
 export default function TransferHistory({
   history,
 }: {
-  history: TypeTransactionsHistory[]
+  history: TypeTransaction[]
 }) {
   if (!history.length) return
 
@@ -29,12 +30,15 @@ export default function TransferHistory({
             <span className="text-center">{data.value} ETH</span>
             <span
               className={`
-                text-right
-                ${data.status === -1 ? '' : 'font-bold'}
+                items-center
+                flex
+                gap-2
+                justify-end
+                ${data.status !== -1 && 'font-bold'}
                 ${data.status === -1 ? '' : data.status === 1 ? 'text-green-600' : 'text-red-600'}
               `}
             >
-              {data.status === 1 ? 'Success' : data.status === -1 ? 'Pending' : 'Error'}
+              {data.status === 1 ? 'Success' : data.status === -1 ? <>Pending <Loading /></> : 'Error'}
             </span>
           </Fragment>
         ))}

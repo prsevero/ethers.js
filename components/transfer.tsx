@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { ethers } from 'ethers'
+import { toast } from 'react-toastify'
 
-import type { TypeTransactionsHistory, TypeWallet } from '@/_app/definitions'
+import type { TypeTransaction, TypeWallet } from '@/_app/definitions'
+import { sendTransaction, waitTransaction } from '@/_app/api'
 import Button from '@/components/button'
 import TransferHistory from '@/components/transfer-history'
 import TransferWallets from '@/components/transfer-wallets'
@@ -20,8 +22,8 @@ export default function Transfer({
   const [from, setFrom] = useState<TypeWallet>()
   const [to, setTo] = useState<TypeWallet>()
   const [value, setValue] = useState<number>(min)
-  const [history, setHistory] = useState<TypeTransactionsHistory[]>([])
-  const transactions = useRef<ethers.TransactionResponse[]>([])
+  const [history, setHistory] = useState<TypeTransaction[]>([])
+  const [transactions, setTransactions] = useState<TypeTransaction[]>([])
 
   const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = parseFloat(e.target.value)
@@ -30,25 +32,25 @@ export default function Transfer({
 
   useEffect(() => {
     (async() => {
-      const tx = transactions.current.pop()
+      const tx = transactions.pop()
       if (!tx) return
 
-      const receipt = await tx.wait()
-      if (!receipt) return
+      const receipt = await waitTransaction(tx.hash)
+      if (receipt === null) return
 
       setHistory(prev => {
         let hist = [...prev]
         for (let i=0, max=hist.length; i<max; i++) {
           if (hist[i].hash === tx.hash) {
-            hist[i].status = receipt.status
+            hist[i].status = receipt
             break
           }
         }
-        onTransaction()
         return hist
       })
+      onTransaction()
     })()
-  }, [transactions.current])
+  }, [onTransaction, transactions])
 
   async function handleTransfer(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -57,18 +59,27 @@ export default function Transfer({
 
     setLoading(true)
     try {
-      const tx = await from.wallet.sendTransaction({
-        to: to.wallet.address,
-        value: ethers.parseUnits(`${value}`, 'ether'),
-      })
-      let h = [...history]
-      h.unshift({
-        hash: tx.hash,
-        status: -1,
-        value: value,
-      })
-      transactions.current = [...transactions.current, tx]
-      setHistory(h)
+      const transaction = await sendTransaction(from, to, value)
+      if (!transaction) return
+
+      if (typeof transaction === 'object' && 'hash' in transaction) {
+        const tx = transaction as TypeTransaction
+        let h = [...history]
+        h.unshift({
+          hash: tx.hash,
+          status: -1,
+          value: value,
+        })
+        setTransactions([...transactions, tx])
+        setHistory(h)
+      } else {
+        const error = transaction as ethers.ErrorCode
+        if (error === 'INSUFFICIENT_FUNDS') {
+          toast.error('The selected wallet does not have sufficient funds.')
+        } else {
+          toast.error('An error occurred, please try again.')
+        }
+      }
     } catch (error) {
       console.error(error)
     } finally {
@@ -97,6 +108,19 @@ export default function Transfer({
       </div>
       <form onSubmit={handleTransfer}>
         <fieldset disabled={loading}>
+          <label
+            className={`
+              block
+              cursor-pointer
+              font-bold
+              mb-1
+              mt-3
+              mx-auto
+              text-sm
+              w-44
+            `}
+            htmlFor="value"
+          >Value</label>
           <input
             className={`
               border
@@ -104,7 +128,6 @@ export default function Transfer({
               block
               h-9
               mb-1
-              mt-3
               mx-auto
               outline-0
               px-2
@@ -114,6 +137,7 @@ export default function Transfer({
               duration-200
               focus:border-sky-600
             `}
+            id="value"
             max={max}
             min={min}
             onChange={handleValueChange}
