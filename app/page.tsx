@@ -4,13 +4,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { ethers } from 'ethers'
 import { toast } from 'react-toastify'
 
-import type { TypeWallet, TypeFullWallet } from '@/_app/definitions'
+import type { TypeWallet, TypeFullWallet } from '@/_lib/definitions'
 import Button from '@/components/button'
 import ClipboardCopy from '@/components/clipboard-copy'
 import StartScreen from '@/components/start-screen'
 import Transfer from '@/components/transfer'
 import Wallet from '@/components/wallet'
-import { connect, createWallet, getBalance, getDefaultWallets } from '@/_app/api'
+import { connect, createWallet, getBalance, getDefaultWallets } from '@/_lib/api'
 
 
 export default function Home() {

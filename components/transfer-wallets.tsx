@@ -1,4 +1,4 @@
-import type { TypeWallet } from '@/_app/definitions'
+import type { TypeWallet } from '@/_lib/definitions'
 import Button from '@/components/button'
 
 export default function TransferWallets({

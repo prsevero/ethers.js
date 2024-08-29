@@ -27,7 +27,7 @@ This project utilizes ethers.js to interact with the Ethereum blockchain. It fea
 
 ## Architecture
 
-- `_app`: global application files (API and types definitions)
+- `_lib`: global application files (API and types definitions)
 - `assets`: media used in the project
 - `components`: UI components
 - `pages`: Next.js pages

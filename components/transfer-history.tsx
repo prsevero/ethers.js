@@ -1,7 +1,7 @@
 import { Fragment } from 'react'
 import { ethers } from 'ethers'
 
-import type { TypeTransaction } from '@/_app/definitions'
+import type { TypeTransaction } from '@/_lib/definitions'
 import Loading from '@/components/loading'
 
 export default function TransferHistory({
